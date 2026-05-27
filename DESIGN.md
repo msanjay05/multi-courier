@@ -2,34 +2,58 @@
 
 ## Architecture
 
-The API exposes one courier-agnostic contract to internal clients:
+The API exposes courier-agnostic contracts to internal clients:
 
-- `POST /api/v1/orders/`
-- `GET /api/v1/orders/{order_id}/track/`
-- `POST /api/v1/orders/{order_id}/cancel/`
-- `POST /api/v1/orders/bulk/`
+- **Order**
+  - `POST /api/v1/order/` (creates `Order` + nested `OrderItem`)
+- **Shipment**
+  - `POST /api/v1/shipment/` (creates shipment for an existing `Order`)
+  - `GET /api/v1/shipment/{order_id}/track/` (read-only; returns tracking history from DB)
+  - `POST /api/v1/shipment/{order_id}/cancel/`
+  - `POST /api/v1/shipment/bulk/` (async; Celery background job)
+  - `POST /api/v1/shipment/webhook/` (courier webhook; appends tracking)
 
 DRF views only validate input, authenticate users, and call services. Business rules live in `logistics/services`. Courier-specific code lives behind the adapter interface in `logistics/couriers`.
 
-The current registered courier is `urbanebolt`. The adapter maps the internal normalized order schema to UrbaneBolt's UAT manifest, tracking, cancel, and token APIs.
+Registered couriers:
+- `urbanebolt` (UAT integration)
+- `mock` (local dev/testing; no external HTTP)
 
 ## Pattern
 
-The courier layer uses the Adapter plus Registry pattern. Each partner implements the same methods: create, track, and cancel. The registry resolves an adapter by `courier_partner`, which keeps routes, serializers, and services unchanged when another courier is added.
+The courier layer uses the Adapter + Registry pattern. Each partner implements:
+- `create_order(shipment)`
+- `create_orders(shipments)` (optional bulk create; default falls back to per-shipment)
+- `track_order(shipment)`
+- `cancel_order(shipment)`
+
+The registry resolves an adapter by `courier_partner`, which keeps routes, serializers, and services unchanged when another courier is added.
 
 ## Database Schema
 
+`Order`
+
+- `order_number` (generated server-side; unique)
+- payment mode / COD amount / totals
+- `shipping_address`, `billing_address` (FKs)
+- `warehouse` (FK, default warehouse assigned if not provided)
+- metadata + timestamps
+
+`OrderItem`
+
+- FK to `Order`
+- sku/name/qty/price/tax + metadata
+
 `Shipment`
 
-- Owner/user
-- Internal `order_id`
-- Courier partner
-- Courier shipment id
+- FK to `Order`
+- Courier partner (FK to `CourierPartner`)
+- Courier shipment/order id
 - AWB number
 - Current status
-- Normalized payload
 - Courier request and response payloads
 - Failure payload
+- `bulk_batch` (nullable FK to `BulkBatch`)
 - Timestamps
 
 `TrackingEvent`
@@ -42,20 +66,27 @@ The courier layer uses the Adapter plus Registry pattern. Each partner implement
 
 `BulkBatch`
 
-- Owner/user
 - Batch UUID
 - Status and counts
+- `order_list` (raw request list persisted for debugging)
 - Timestamps
 
 `BulkOrderResult`
 
 - Per-order success/failure in a batch
 - Error code/message
-- Linked order when available
+- `request_payload` / `response_payload` JSON for debugging
+- Courier partner when resolvable
 
 ## Bulk Processing Trade-Off
 
-`POST /api/v1/orders/bulk/` returns `202 Accepted` immediately with a `batch_id`. A background thread processes orders using a thread pool. This keeps the HTTP request responsive and supports partial success. For production, the same service boundary can move to Celery/RQ/SQS without changing the public API.
+`POST /api/v1/shipment/bulk/` returns `202 Accepted` immediately with a `batch_id`. A Celery background task processes orders. This keeps the HTTP request responsive and supports partial success. The task:
+
+- filters out invalid orders
+- groups by `courier_partner`
+- bulk-calls the courier adapter where supported (`create_orders`)
+- stores per-order results in `BulkOrderResult`
+
 
 ## Auth And Authorization
 
@@ -63,4 +94,6 @@ Signup and login return JWT access and refresh tokens. Shipment endpoints requir
 
 ## Error Handling
 
-The project uses one normalized error shape with code, message, and details. Unknown couriers return the supported courier list. Courier failures are translated to internal error codes instead of leaking raw partner errors to API consumers.
+The project uses one normalized error shape with code, message, and details. Courier failures are translated to internal error codes instead of leaking raw partner errors to API consumers.
+
+Tracking updates are webhook-driven: `GET /track/` is read-only and does not call courier tracking APIs.

@@ -10,6 +10,31 @@ from logistics.services.shipments import calculate_parcels
 
 logger = logging.getLogger(__name__)
 
+def _result_failure(batch, user, *, order_id, code, message, payload):
+    """
+    Record a failure row and emit a structured log.
+
+    This is used for failures that don't throw (invalid input, missing order, etc.).
+    """
+    logger.warning(
+        "Bulk row failed",
+        extra={
+            "batch_id": str(getattr(batch, "batch_id", "")),
+            "order_id": order_id,
+            "code": code,
+        },
+    )
+    creare_bulk_order_result(
+        batch,
+        user,
+        code=code,
+        message=message,
+        request_payload=payload or {},
+        response_payload={},
+        internal_order_id=order_id,
+        courier=None,
+    )
+
 
 def update_bacth_status(batch, status, succeeded, failed, user):
     batch.status = status
