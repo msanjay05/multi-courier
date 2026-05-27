@@ -216,6 +216,42 @@
           }
         },
         {
+          "name": "Create Shipment (mock)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{order_id}}\",\n  \"courier_partner\": \"mock\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipment/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                ""
+              ]
+            }
+          }
+        },
+        {
           "name": "Webhook Status Update",
           "request": {
             "method": "POST",
@@ -247,7 +283,7 @@
           }
         },
         {
-          "name": "Track Order",
+          "name": "Track Shipment",
           "request": {
             "auth": {
               "type": "bearer",
@@ -355,35 +391,6 @@
               "path": [
                 "shipment",
                 "bulk",
-                ""
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Bulk Status",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/shipment/bulk/{{batch_id}}/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "shipment",
-                "bulk",
-                "{{batch_id}}",
                 ""
               ]
             }
