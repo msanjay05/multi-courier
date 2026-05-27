@@ -87,6 +87,11 @@ The registry resolves an adapter by `courier_partner`, which keeps routes, seria
 - bulk-calls the courier adapter where supported (`create_orders`)
 - stores per-order results in `BulkOrderResult`
 
+Trade-off:
+
+- The user does not get completion immediately (they must poll the status endpoint using `batch_id`).
+- This is safer because bulk processing runs in the background and does not block the request thread.
+
 
 ## Auth And Authorization
 
