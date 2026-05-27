@@ -1,5 +1,4 @@
 import json
-import logging
 import time
 
 from django.conf import settings
@@ -7,6 +6,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 
 from logistics.couriers.exceptions import CourierAuthError, CourierError, CourierTemporaryError
+from logistics.middleware.request_logging import logger
 from logistics.models import Order, Shipment, ShipmentStatus, TrackingEvent
 from logistics.services.couriers import get_adapter_or_raise, resolve_courier_partner
 from logistics.services.exceptions import (
@@ -16,9 +16,6 @@ from logistics.services.exceptions import (
     ShipmentFailedError,
 )
 
-logger = logging.getLogger(__name__)
-
-
 def get_shipment_or_raise(order_id):
     try:
         return (
@@ -27,7 +24,8 @@ def get_shipment_or_raise(order_id):
             .get(order__order_number=order_id)
         )
     except Shipment.DoesNotExist as exc:
-        raise ShipmentAccessError('Shipment not found.') from exc
+        logger.exception('Shipment not found. for order_id=%s', order_id)
+        raise ShipmentAccessError('Shipment not found for order_id=%s' % order_id) from exc
 
 def _address_as_dict(address, field_name):
     if address is None:
@@ -83,14 +81,6 @@ def create_shipment(user, order,courier_partner):
         courier_response = _call_with_retries(adapter.create_order,shipment)
     except CourierError as exc:
         _mark_shipment_failed(shipment, user, exc)
-        logger.exception(
-            'Courier create failed',
-            extra={
-                'order_id': order.order_number,
-                'courier_partner': courier_partner.code,
-                'error_type': exc.code,
-            },
-        )
         if isinstance(exc, CourierTemporaryError):
             raise
         raise ShipmentFailedError(

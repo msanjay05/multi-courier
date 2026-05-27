@@ -1,3 +1,4 @@
+from logistics.middleware.request_logging import logger
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,7 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+        logger.info('User logged in successfully. user_id=%s', user.id)
         return Response(
             {
                 'user': {

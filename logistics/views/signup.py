@@ -1,3 +1,4 @@
+from logistics.middleware.request_logging import logger
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -14,6 +15,7 @@ class SignupView(APIView):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        logger.info('User signed up successfully. user_id=%s', user.id)
         return Response(
             {
                 'user': {

@@ -14,6 +14,7 @@ from logistics.couriers.base import (
 )
 from logistics.couriers.exceptions import CourierAuthError, CourierTemporaryError, CourierValidationError
 from logistics.models import ShipmentStatus
+from logistics.middleware.request_logging import logger
 
 
 class UrbaneBoltAdapter(CourierAdapter):
@@ -24,7 +25,11 @@ class UrbaneBoltAdapter(CourierAdapter):
         self._token = None
 
     def create_order(self, shipment):
+        logger.info('Creating shipment for order_id=%s', shipment.order.order_number)
+
         manifest_payload = [self._to_manifest_payload(shipment)]
+        logger.info('Manifest payload=%s', manifest_payload)
+        
         response = self._request('POST', '/api/v1/services/manifest/', json=manifest_payload, auth=True)
         success_response = response.get('successResponse', [])[0] if isinstance(response.get('successResponse', []), list) and len(response.get('successResponse', [])) > 0 else None
         failure_response = response.get('errorResponse', [])[0] if isinstance(response.get('errorResponse', []), list) and len(response.get('errorResponse', [])) > 0 else None
