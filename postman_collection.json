@@ -1,0 +1,395 @@
+{
+  "info": {
+    "_postman_id": "8a5f7a9d-1b27-4f56-b101-multi-courier",
+    "name": "Multi Courier API",
+    "description": "Postman collection for the Multi Courier Django REST API with UrbaneBolt as the active courier. Run Signup or Login first; the collection saves tokens.access into access_token automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "order_id",
+      "value": "ORD-1001"
+    },
+    {
+      "key": "batch_id",
+      "value": ""
+    },
+    {
+      "key": "webhook_secret",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', json.tokens.access);",
+                  "  pm.collectionVariables.set('refresh_token', json.tokens.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo\",\n  \"email\": \"demo@example.com\",\n  \"password\": \"strong-pass-123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', json.tokens.access);",
+                  "  pm.collectionVariables.set('refresh_token', json.tokens.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo\",\n  \"password\": \"strong-pass-123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('order_id', json.order_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_mode\": \"PREPAID\",\n  \"cod_amount\": \"0.00\",\n  \"total_amount\": \"1000.00\",\n  \"billing_address\": {\n    \"name\": \"Customer\",\n    \"phone\": \"8888888888\",\n    \"email\": \"customer@example.com\",\n    \"line1\": \"Park Street\",\n    \"line2\": \"\",\n    \"city\": \"Kolkata\",\n    \"state\": \"WB\",\n    \"postal_code\": \"700016\",\n    \"country\": \"IN\"\n  },\n  \"shipping_address\": {\n    \"name\": \"Customer\",\n    \"phone\": \"8888888888\",\n    \"email\": \"customer@example.com\",\n    \"line1\": \"Park Street\",\n    \"line2\": \"\",\n    \"city\": \"Kolkata\",\n    \"state\": \"WB\",\n    \"postal_code\": \"700016\",\n    \"country\": \"IN\"\n  },\n  \"metadata\": {\n    \"source\": \"postman\"\n  },\n  \"items\": [\n    {\n      \"sku\": \"BOOK-001\",\n      \"name\": \"Books\",\n      \"description\": \"Paperback set\",\n      \"quantity\": 1,\n      \"unit_price\": \"1000.00\",\n      \"tax_amount\": \"0.00\",\n      \"hsn_code\": \"4901\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "order",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipments",
+      "item": [
+        {
+          "name": "Create Shipment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{order_id}}\",\n  \"courier_partner\": \"urbanebolt\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipment/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Webhook Status Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Webhook-Secret",
+                "value": "{{webhook_secret}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{order_id}}\",\n  \"status\": \"DELIVERED\",\n  \"message\": \"Delivered\",\n  \"location\": \"Kolkata\",\n  \"occurred_at\": \"2026-05-27T10:15:00Z\",\n  \"raw_payload\": {\n    \"source\": \"postman\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipment/webhook/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                "webhook",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Track Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shipment/{{order_id}}/track/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                "{{order_id}}",
+                "track",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Shipment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shipment/{{order_id}}/cancel/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                "{{order_id}}",
+                "cancel",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk Shipments",
+      "item": [
+        {
+          "name": "Bulk Create Shipments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('batch_id', json.batch_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orders\": [\n    {\n      \"order_id\": \"ORD-2001\",\n      \"courier_partner\": \"urbanebolt\"\n    },\n    {\n      \"order_id\": \"ORD-2002\",\n      \"courier_partner\": \"urbanebolt\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipment/bulk/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                "bulk",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bulk Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shipment/bulk/{{batch_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipment",
+                "bulk",
+                "{{batch_id}}",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
