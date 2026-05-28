@@ -15,9 +15,11 @@ Supported couriers:
 ```bash
 git clone git@github.com:msanjay05/multi-courier.git
 cd multi-courier
-../.venv/bin/python -m pip install -r requirements.txt
-../.venv/bin/python manage.py migrate
-../.venv/bin/python manage.py runserver
+python -m venv venv
+sourve venv active
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
 ```
 
 Edit `.env` with your local values (UrbaneBolt credentials, secret key, etc.). `.env` is gitignored.
