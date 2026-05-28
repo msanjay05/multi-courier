@@ -16,7 +16,7 @@ Supported couriers:
 git clone git@github.com:msanjay05/multi-courier.git
 cd multi-courier
 python -m venv venv
-sourve venv active
+sourve venv/bin/active
 python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
